@@ -158,6 +158,28 @@ class ContinuousSolarPredictor:
         }
     
     def _predict_from_current_window(self) -> Tuple[List[float], pd.DataFrame]:
+        # If predictor is in demo mode (no model loaded), generate mock predictions
+        if self.predictor.model is None:
+            logger.warning("Using demo mode for continuous predictions")
+            last_time = self.last_update_time
+            pred_timestamps = [last_time + timedelta(hours=i+1) for i in range(24)]
+            
+            # Generate realistic solar pattern
+            hours = np.array([t.hour for t in pred_timestamps])
+            mock_predictions = np.where(
+                (hours >= 6) & (hours < 18),
+                np.maximum(0, 500 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 50),
+                np.zeros(24)
+            )
+            mock_predictions = np.maximum(0, mock_predictions)
+            
+            pred_df = pd.DataFrame({
+                'timestamp': pred_timestamps,
+                'predicted_power_W': mock_predictions
+            })
+            
+            return mock_predictions.tolist(), pred_df
+        
         X_all = np.zeros((len(self.sliding_window_df), len(self.predictor.ALL_FEATURES)))
         
         for i, feature_name in enumerate(self.predictor.ALL_FEATURES):
