@@ -115,12 +115,14 @@ def on_prediction_updated(predictions_W: List[float], timestamp, start_index: in
             # Get start hour from the current window
             window_data = predictor.get_window_data()
             start_hour = pd.to_datetime(window_data['datetime'].iloc[0]).hour
+            window_end_time = window_data['datetime'].iloc[-1]
             
             result = optimizer.on_prediction_update(
                 solar_predictions_W=predictions_W,
                 prediction_timestamp=timestamp,
                 start_index=start_index,
-                start_hour=start_hour
+                start_hour=start_hour,
+                window_end_time=window_end_time
             )
             
             if result:
@@ -330,12 +332,14 @@ async def run_optimization(request: OptimizationRequest):
         predictions = predictor.get_current_predictions()
         window_data = predictor.get_window_data()
         start_hour = pd.to_datetime(window_data['datetime'].iloc[0]).hour
+        window_end_time = window_data['datetime'].iloc[-1]
         
         result = optimizer.optimize(
             solar_predictions_W=predictions['predictions_W'],
             prediction_timestamp=pd.to_datetime(predictions['window_end']),
             start_index=request.start_index,
             start_hour=start_hour,
+            window_end_time=window_end_time,
             force=request.force
         )
         

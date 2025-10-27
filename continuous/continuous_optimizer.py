@@ -28,7 +28,8 @@ class ContinuousOptimizer:
     def disable_auto_optimization(self):
         self.is_auto_optimization_enabled = False
     
-    def load_data(self, start_index=0, num_hours=24):
+    def load_data(self, start_index=0, num_hours=24, window_end_time=None):
+        """Load load demand data for the next 24 hours after window_end_time"""
         df = pd.read_csv(self.historical_csv)
         # Normalize datetime column
         if 'datetime' not in df.columns:
@@ -45,32 +46,52 @@ class ContinuousOptimizer:
         load = load.replace([float('inf'), float('-inf')], pd.NA).ffill().bfill().fillna(0.0)
         df['Load_kW'] = load.clip(lower=0.0)
 
-        # Window selection
-        end_index = start_index + num_hours
-        if end_index > len(df):
-            end_index = len(df)
-            start_index = max(0, end_index - num_hours)
-        df_subset = df.iloc[start_index:end_index].copy()
-        if len(df_subset) < num_hours:
-            # pad by repeating last value if necessary
-            last_val = float(df_subset['Load_kW'].iloc[-1]) if len(df_subset) > 0 else 0.0
-            pad_count = num_hours - len(df_subset)
-            pad_rows = pd.DataFrame({
-                'datetime': [df['datetime'].iloc[-1]] * pad_count,
-                'Load_kW': [last_val] * pad_count
-            })
-            df_subset = pd.concat([df_subset, pad_rows], ignore_index=True)
+        # If window_end_time is provided, get load data for next 24 hours after that time
+        if window_end_time is not None:
+            window_end_dt = pd.to_datetime(window_end_time)
+            # Find rows after window_end_time
+            future_rows = df[df['datetime'] > window_end_dt].head(num_hours)
+            
+            if len(future_rows) >= num_hours:
+                df_subset = future_rows.copy()
+            else:
+                # If not enough future data, pad with last available value
+                last_val = float(df['Load_kW'].iloc[-1]) if len(df) > 0 else 0.0
+                last_time = df['datetime'].iloc[-1] if len(df) > 0 else window_end_dt
+                
+                pad_count = num_hours - len(future_rows)
+                pad_rows = pd.DataFrame({
+                    'datetime': [last_time + pd.Timedelta(hours=i+1) for i in range(pad_count)],
+                    'Load_kW': [last_val] * pad_count
+                })
+                df_subset = pd.concat([future_rows, pad_rows], ignore_index=True)
+        else:
+            # Fallback to old behavior using start_index
+            end_index = start_index + num_hours
+            if end_index > len(df):
+                end_index = len(df)
+                start_index = max(0, end_index - num_hours)
+            df_subset = df.iloc[start_index:end_index].copy()
+            if len(df_subset) < num_hours:
+                # pad by repeating last value if necessary
+                last_val = float(df_subset['Load_kW'].iloc[-1]) if len(df_subset) > 0 else 0.0
+                pad_count = num_hours - len(df_subset)
+                pad_rows = pd.DataFrame({
+                    'datetime': [df['datetime'].iloc[-1]] * pad_count,
+                    'Load_kW': [last_val] * pad_count
+                })
+                df_subset = pd.concat([df_subset, pad_rows], ignore_index=True)
 
         return {
             "load_demand_kW": df_subset["Load_kW"].astype(float).tolist(),
             "start_hour": int(pd.to_datetime(df_subset["datetime"].iloc[0]).hour)
         }
     
-    def optimize(self, solar_predictions_W, prediction_timestamp, start_index=0, start_hour=None, force=False):
+    def optimize(self, solar_predictions_W, prediction_timestamp, start_index=0, start_hour=None, force=False, window_end_time=None):
         if not force and not self.is_auto_optimization_enabled:
             return {"status": "skipped"}
         
-        data = self.load_data(start_index=start_index, num_hours=24)
+        data = self.load_data(start_index=start_index, num_hours=24, window_end_time=window_end_time)
         start_h = start_hour if start_hour is not None else data["start_hour"]
         
         # Validate prediction vector
@@ -88,7 +109,7 @@ class ContinuousOptimizer:
         logger.info("Optimization complete")
         return results
     
-    def on_prediction_update(self, solar_predictions_W, prediction_timestamp, start_index=0, start_hour=None):
+    def on_prediction_update(self, solar_predictions_W, prediction_timestamp, start_index=0, start_hour=None, window_end_time=None):
         if not self.is_auto_optimization_enabled:
             return None
         return self.optimize(
@@ -96,6 +117,7 @@ class ContinuousOptimizer:
             prediction_timestamp=prediction_timestamp,
             start_index=start_index,
             start_hour=start_hour,
+            window_end_time=window_end_time,
             force=False
         )
     
