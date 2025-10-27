@@ -164,11 +164,11 @@ class ContinuousSolarPredictor:
             last_time = self.last_update_time
             pred_timestamps = [last_time + timedelta(hours=i+1) for i in range(24)]
             
-            # Generate realistic solar pattern
+            # Generate realistic solar pattern (scaled to ~6000W average)
             hours = np.array([t.hour for t in pred_timestamps])
             mock_predictions = np.where(
                 (hours >= 6) & (hours < 18),
-                np.maximum(0, 500 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 50),
+                np.maximum(0, 8000 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 500),
                 np.zeros(24)
             )
             mock_predictions = np.maximum(0, mock_predictions)

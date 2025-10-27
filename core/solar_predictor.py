@@ -201,11 +201,12 @@ class SolarPredictor:
                 pred_timestamps = [last_time + pd.Timedelta(hours=i+1) for i in range(24)]
                 
                 # Generate realistic-looking solar pattern (sine wave for day/night)
+                # Scaled to match typical solar production (~6000W average during daylight)
                 hours = np.array([t.hour for t in pred_timestamps])
                 # Solar production: 0 at night (0-6, 18-24), peak around noon
                 mock_predictions = np.where(
                     (hours >= 6) & (hours < 18),
-                    np.maximum(0, 500 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 50),
+                    np.maximum(0, 8000 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 500),
                     np.zeros(24)
                 )
                 mock_predictions = np.maximum(0, mock_predictions)  # Ensure non-negative
