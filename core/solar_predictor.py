@@ -182,7 +182,7 @@ class SolarPredictor:
                 raise ValueError(f"Need {self.sequence_length} hours. Found {len(df_subset)}")
             
             # If model is not loaded (demo mode), generate mock predictions
-            if self.model is None:
+            if self.model is None or self.scaler_features is None or self.scaler_target is None:
                 logger.warning("Using demo mode - generating mock solar predictions")
                 
                 # Find datetime column

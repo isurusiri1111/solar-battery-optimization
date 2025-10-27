@@ -159,7 +159,7 @@ class ContinuousSolarPredictor:
     
     def _predict_from_current_window(self) -> Tuple[List[float], pd.DataFrame]:
         # If predictor is in demo mode (no model loaded), generate mock predictions
-        if self.predictor.model is None:
+        if self.predictor.model is None or self.predictor.scaler_features is None or self.predictor.scaler_target is None:
             logger.warning("Using demo mode for continuous predictions")
             last_time = self.last_update_time
             pred_timestamps = [last_time + timedelta(hours=i+1) for i in range(24)]
