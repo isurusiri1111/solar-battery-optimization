@@ -38,8 +38,8 @@ build/
 # Jupyter
 .ipynb_checkpoints/
 
-# Model files (too large for git)
-*.keras
-*.h5
-*.pkl
-*.joblib
+# Model files (uncomment if models become too large for git)
+# *.keras
+# *.h5
+# *.pkl
+# *.joblib
