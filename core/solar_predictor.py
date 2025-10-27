@@ -184,7 +184,20 @@ class SolarPredictor:
             # If model is not loaded (demo mode), generate mock predictions
             if self.model is None:
                 logger.warning("Using demo mode - generating mock solar predictions")
-                last_time = pd.to_datetime(df_subset['datetime'].iloc[-1])
+                
+                # Find datetime column
+                datetime_col = None
+                for col in ['datetime', 'timestamp', 'time', 'Date']:
+                    if col in df_subset.columns:
+                        datetime_col = col
+                        break
+                
+                if datetime_col:
+                    last_time = pd.to_datetime(df_subset[datetime_col].iloc[-1])
+                else:
+                    # If no datetime column, use current time
+                    last_time = pd.Timestamp.now()
+                
                 pred_timestamps = [last_time + pd.Timedelta(hours=i+1) for i in range(24)]
                 
                 # Generate realistic-looking solar pattern (sine wave for day/night)
