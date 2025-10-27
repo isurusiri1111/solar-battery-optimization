@@ -19,6 +19,9 @@ from continuous.scheduler import TaskScheduler
 from continuous.performance_tracker import PerformanceTracker
 from continuous.history_manager import HistoryManager
 
+# Create logs directory FIRST
+Path("logs").mkdir(exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -29,8 +32,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-Path("logs").mkdir(exist_ok=True)
 
 # Initialize FastAPI
 app = FastAPI(
