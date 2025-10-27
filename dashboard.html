@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Energy Management System for Solar Prosumers</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            letter-spacing: 0.5px;
+        }
+        
+        .header p {
+            font-size: 0.95em;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            color: #2c3e50;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #f8f9fa;
+            border-color: #2a5298;
+            transform: translateY(-1px);
+        }
+        
+        .tab.active {
+            background: #2a5298;
+            color: white;
+            border-color: #2a5298;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .card h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2a5298;
+            padding-bottom: 10px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .card h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1e3c72;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .btn-warning {
+            background: #e67e22;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #d35400;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 1em;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #2a5298;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+        }
+        
+        .info-box strong {
+            color: #2c3e50;
+        }
+        
+        small {
+            display: block;
+            color: #666;
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+        
+        @media (max-width: 1200px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DEVELOPMENT OF AI-BASED OPTIMUM ENERGY RESOURCE MANAGEMENT SYSTEM FOR PROSUMERS WITH SOLAR ROOFTOPS</h1>
+            <p>Real-time Energy Management Dashboard (2021E055, 2021E070)</p>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('solar-tab')">Solar Prediction</button>
+            <button class="tab" onclick="switchTab('realtime-tab')">Real-time Updates</button>
+            <button class="tab" onclick="switchTab('optimization-tab')">Optimization</button>
+            <button class="tab" onclick="switchTab('continuous-tab')">System Control</button>
+            <button class="tab" onclick="switchTab('performance-tab')">Performance</button>
+        </div>
+        
+        <!-- Solar Prediction Tab -->
+        <div id="solar-tab" class="tab-content active">
+            <div class="card">
+                <h2>Solar Power Prediction (24 Hours)</h2>
+                
+                <div class="alert alert-info">
+                    <strong>System Overview:</strong> Uses 48 hours of historical data to predict next 24 hours.<br>
+                    <strong>Battery:</strong> 100kWh capacity, 25kW charge/discharge, 20-90% SOC<br>
+                    <strong>Tariff:</strong> Peak (54.00/45.80), Day (25.00/25.00), Off-peak (13.00/13.00) Rs./kWh
+                </div>
+                
+                <div>
+                    <label>Start Index (which 48 hours to use from CSV)</label>
+                    <input type="number" id="start-index" value="0" min="0" step="1">
+                    <small>0 = first 48 hours, 1 = hours 1-48, etc.</small>
+                </div>
+                
+                <button class="btn-primary" onclick="initializeAndPredict()">
+                    Initialize & Predict Next 24 Hours
+                </button>
+                
+                <div id="solar-status" style="margin-top: 15px;"></div>
+                
+                <div id="solar-results" style="display: none; margin-top: 20px;">
+                    <div class="grid-3">
+                        <div class="metric-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                            <div class="metric-label">Mean Power</div>
+                            <div class="metric-value"><span id="solar-mean">0</span> W</div>
+                        </div>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);">
+                            <div class="metric-label">Peak Power</div>
+                            <div class="metric-value"><span id="solar-peak">0</span> W</div>
+                        </div>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                            <div class="metric-label">Total Energy</div>
+                            <div class="metric-value"><span id="solar-energy">0</span> kWh</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="solarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Real-time Updates Tab -->
+        <div id="realtime-tab" class="tab-content">
+            <div class="card">
+                <h2>Real-time Sliding Window Updates</h2>
+                
+                <div class="alert alert-info">
+                    Add actual measurements to update the 48-hour window. System automatically re-predicts next 24 hours after each update.
+                </div>
+                
+                <div class="grid-2">
+                    <div>
+                        <h3>System Status</h3>
+                        <div class="info-box">
+                            <p><strong>Initialized:</strong> <span id="status-init">No</span></p>
+                            <p><strong>Window Size:</strong> <span id="status-window">0</span> hours</p>
+                            <p><strong>Window Start:</strong> <span id="status-start">-</span></p>
+                            <p><strong>Window End:</strong> <span id="status-end">-</span></p>
+                            <p><strong>Next Expected:</strong> <span id="status-nextexp">-</span></p>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="refreshStatus()">
+                            Refresh Status
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <h3>Add New Measurement</h3>
+                        
+                        <label>Timestamp</label>
+                        <input type="datetime-local" id="rt-timestamp">
+                        
+                        <label>Actual Power (W)</label>
+                        <input type="number" id="rt-power" placeholder="e.g., 8500" step="0.1">
+                        
+                        <button class="btn-success" onclick="addRealtimeMeasurement()">
+                            Add Measurement & Update Window
+                        </button>
+                        
+                        <button class="btn-primary" onclick="setNextExpectedTime()">
+                            Set Next Expected Time
+                        </button>
+                        
+                        <div id="rt-status" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+                
+                <h3>Batch Import Measurements</h3>
+                <p>Paste CSV data (timestamp,power_W) to add multiple measurements:</p>
+                <textarea id="batch-measurements" rows="6" placeholder="2024-10-21 13:00:00,8500
+2024-10-21 14:00:00,9200
+2024-10-21 15:00:00,8800"></textarea>
+                
+                <button class="btn-success" onclick="importBatchMeasurements()">
+                    Import Batch Measurements
+                </button>
+                
+                <div id="batch-status" style="margin-top: 15px;"></div>
+                
+                <h3 style="margin-top: 30px;">Feed from Historical Dataset</h3>
+                <div class="alert alert-info">
+                    Automatically load the next rows from your historical CSV file into the sliding window. Perfect for testing and demonstrations!
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                    <label for="numHours" style="margin: 0;">Number of hours to feed:</label>
+                    <select id="numHours" style="width: 150px; margin: 0;">
+                        <option value="1">1 hour</option>
+                        <option value="6">6 hours</option>
+                        <option value="12">12 hours</option>
+                        <option value="24" selected>24 hours</option>
+                    </select>
+                    
+                    <button class="btn-primary" onclick="feedFromHistorical()" style="margin: 0;">
+                        Feed Next Hours from Dataset
+                    </button>
+                </div>
+                
+                <div id="feedResult" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="card">
+                <h2>Sliding Window Visualization</h2>
+                <div class="chart-container">
+                    <canvas id="windowChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Optimization Tab -->
+        <div id="optimization-tab" class="tab-content">
+            <div class="card">
+                <h2>Battery Optimization</h2>
+                
+                <div class="alert alert-info">
+                    <strong>Fixed Parameters:</strong><br>
+                    • Battery: 100kWh capacity, 25kW max charge/discharge, 20-90% SOC<br>
+                    • Tariff: Peak (18:30-22:30) = 54.00/45.80, Day (05:30-18:30) = 25.00/25.00, Off-peak (22:30-05:30) = 13.00/13.00 Rs./kWh<br>
+                    • Load demand: Read from CSV file
+                </div>
+                
+                <div id="opt-status" class="alert alert-info">
+                    Initialize system and run prediction first, then click "Run Optimization" below.
+                </div>
+                
+                <label>Start Index (for load demand from CSV)</label>
+                <input type="number" id="opt-start-index" value="0" min="0" step="1">
+                <small>Starting row in CSV for 24 hours of load demand</small>
+                
+                <button class="btn-success" onclick="runOptimization()" style="font-size: 1.1em; padding: 12px 24px;">
+                    Run Optimization Now
+                </button>
+                
+                <div id="opt-results" style="display: none; margin-top: 30px;">
+                    <h3>Optimization Results</h3>
+                    
+                    <div class="grid-3">
+                        <div class="metric-card">
+                            <div class="metric-label">Total Cost</div>
+                            <div class="metric-value">Rs.<span id="opt-cost">0</span></div>
+                        </div>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);">
+                            <div class="metric-label">Grid Import</div>
+                            <div class="metric-value"><span id="opt-import">0</span> kWh</div>
+                        </div>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                            <div class="metric-label">Grid Export</div>
+                            <div class="metric-value"><span id="opt-export">0</span> kWh</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">Power Flow</h3>
+                    <div class="chart-container">
+                        <canvas id="powerChart"></canvas>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">Battery Schedule</h3>
+                    <div class="chart-container">
+                        <canvas id="batteryChart"></canvas>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">State of Charge (SOC)</h3>
+                    <div class="chart-container">
+                        <canvas id="socChart"></canvas>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">Hourly Schedule</h3>
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table id="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Hour</th>
+                                    <th>Solar (kW)</th>
+                                    <th>Load (kW)</th>
+                                    <th>Charge (kW)</th>
+                                    <th>Discharge (kW)</th>
+                                    <th>Import (kW)</th>
+                                    <th>Export (kW)</th>
+                                    <th>SOC (%)</th>
+                                    <th>Tariff In</th>
+                                    <th>Tariff Out</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-tbody"></tbody>
+                        </table>
+                    </div>
+                    
+                    <button class="btn-success" onclick="downloadCSV()">
+                        Download Schedule (CSV)
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Continuous Control Tab -->
+        <div id="continuous-tab" class="tab-content">
+            <div class="card">
+                <h2>System Operations Control</h2>
+                
+                <div class="grid-2">
+                    <div>
+                        <h3>Automatic Optimization</h3>
+                        <div class="alert alert-info">
+                            When enabled, system automatically optimizes battery schedule every time predictions update (after each new measurement).
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="auto-opt-enabled" 
+                                       onchange="toggleAutoOptimization()" 
+                                       style="width: auto; transform: scale(1.5);">
+                                <span style="font-size: 1.1em;">Enable Automatic Optimization</span>
+                            </label>
+                        </div>
+                        
+                        <div id="auto-opt-status"></div>
+                        
+                        <div class="info-box" style="margin-top: 20px;">
+                            <strong>Status:</strong>
+                            <p>Auto-optimization: <span id="auto-opt-display">Unknown</span></p>
+                            <p>Total optimizations: <span id="total-optimizations">0</span></p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3>System Statistics</h3>
+                        <div class="info-box">
+                            <p><strong>Total Measurements:</strong> <span id="total-measurements">0</span></p>
+                            <p><strong>Window Size:</strong> <span id="stat-window-size">0</span> hours</p>
+                            <p><strong>Predictions Available:</strong> <span id="stat-pred-available">No</span></p>
+                            <p><strong>Last Update:</strong> <span id="stat-last-update">Never</span></p>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="refreshSystemStats()">
+                            Refresh Statistics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Tab -->
+        <div id="performance-tab" class="tab-content">
+            <div class="card">
+                <h2>System Performance Metrics</h2>
+                
+                <div class="alert alert-info">
+                    Performance tracking will be available after you add actual measurements.
+                </div>
+                
+                <div class="grid-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Mean Absolute Error</div>
+                        <div class="metric-value"><span id="perf-mae">-</span> W</div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, #d35400 0%, #ba4a00 100%);">
+                        <div class="metric-label">RMSE</div>
+                        <div class="metric-value"><span id="perf-rmse">-</span> W</div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);">
+                        <div class="metric-label">Mean % Error</div>
+                        <div class="metric-value"><span id="perf-mape">-</span>%</div>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="refreshPerformance()">
+                    Refresh Performance Metrics
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        
+        let solarChart, windowChart, powerChart, batteryChart, socChart;
+        let solarPrediction = null;
+        let optimizationResults = null;
+        
+        // Initialize all charts
+        function initializeCharts() {
+            // Solar prediction chart
+            const ctxSolar = document.getElementById('solarChart').getContext('2d');
+            solarChart = new Chart(ctxSolar, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Solar Power (W)',
+                        data: [],
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Power (W)' }
+                        },
+                        x: { title: { display: true, text: 'Hour' } }
+                    }
+                }
+            });
+            
+            // Sliding window chart
+            const ctxWindow = document.getElementById('windowChart').getContext('2d');
+            windowChart = new Chart(ctxWindow, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Actual Power (W) - 48h Window',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Power (W)' } },
+                        x: { title: { display: true, text: 'Time' } }
+                    }
+                }
+            });
+            
+            // Power flow chart
+            const ctxPower = document.getElementById('powerChart').getContext('2d');
+            powerChart = new Chart(ctxPower, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Solar (kW)', data: [], borderColor: '#f39c12', borderWidth: 2, fill: false },
+                        { label: 'Load (kW)', data: [], borderColor: '#e74c3c', borderWidth: 2, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Power (kW)' } } }
+                }
+            });
+            
+            // Battery schedule chart
+            const ctxBattery = document.getElementById('batteryChart').getContext('2d');
+            batteryChart = new Chart(ctxBattery, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Charge (kW)', data: [], backgroundColor: '#2ecc71' },
+                        { label: 'Discharge (kW)', data: [], backgroundColor: '#e67e22' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Power (kW)' } } }
+                }
+            });
+            
+            // SOC chart
+            const ctxSOC = document.getElementById('socChart').getContext('2d');
+            socChart = new Chart(ctxSOC, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'SOC (%)',
+                        data: [],
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 100, title: { display: true, text: 'SOC (%)' } } }
+                }
+            });
+        }
+        
+        // Switch tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        // Show alert
+        function showAlert(elementId, message, type) {
+            const alertDiv = document.getElementById(elementId);
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = message;
+        }
+        
+        // Initialize and predict
+        async function initializeAndPredict() {
+            const startIndex = parseInt(document.getElementById('start-index').value);
+            
+            try {
+                showAlert('solar-status', 'Initializing system...', 'info');
+                
+                const response = await fetch(`${API_URL}/initialize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        historical_csv: 'data/historical_solar_data.csv',
+                        start_index: startIndex,
+                        enable_auto_optimization: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail);
+                }
+                
+                await response.json();
+                
+                // Get predictions
+                const predResponse = await fetch(`${API_URL}/predictions/current`);
+                const predData = await predResponse.json();
+                
+                solarPrediction = predData;
+                
+                // Update metrics
+                document.getElementById('solar-mean').textContent = Math.round(predData.summary.mean_W);
+                document.getElementById('solar-peak').textContent = Math.round(predData.summary.max_W);
+                document.getElementById('solar-energy').textContent = predData.summary.total_kWh.toFixed(2);
+                
+                // Update chart
+                const labels = Array.from({length: 24}, (_, i) => `H${i}`);
+                solarChart.data.labels = labels;
+                solarChart.data.datasets[0].data = predData.predictions_W;
+                solarChart.update();
+                
+                document.getElementById('solar-results').style.display = 'block';
+                
+                showAlert('solar-status', 'System initialized! Predictions ready.', 'success');
+                
+                await refreshStatus();
+                
+            } catch (error) {
+                showAlert('solar-status', `Error: ${error.message}`, 'warning');
+            }
+        }
+        
+        // Refresh status
+        async function refreshStatus() {
+            try {
+                const response = await fetch(`${API_URL}/status`);
+                const data = await response.json();
+                
+                if (data.predictor && data.predictor.initialized) {
+                    document.getElementById('status-init').textContent = 'Yes';
+                    document.getElementById('status-window').textContent = data.predictor.window_size;
+                    document.getElementById('status-start').textContent = new Date(data.predictor.window_start).toLocaleString();
+                    document.getElementById('status-end').textContent = new Date(data.predictor.window_end).toLocaleString();
+                    document.getElementById('status-nextexp').textContent = new Date(data.predictor.next_expected).toLocaleString();
+                    
+                    await updateWindowChart();
+                }
+            } catch (error) {
+                console.error('Failed to refresh status:', error);
+            }
+        }
+        
+        // Update window chart
+        async function updateWindowChart() {
+            try {
+                const response = await fetch(`${API_URL}/window/current`);
+                const data = await response.json();
+                
+                const labels = data.data.map(d => new Date(d.datetime).toLocaleTimeString());
+                const values = data.data.map(d => d['Power(W)']);
+                
+                windowChart.data.labels = labels;
+                windowChart.data.datasets[0].data = values;
+                windowChart.update();
+            } catch (error) {
+                console.error('Failed to update window chart:', error);
+            }
+        }
+        
+        // Helper: format Date to datetime-local value (YYYY-MM-DDTHH:mm) in local time
+        function toDatetimeLocalValue(date) {
+            const pad = (n) => String(n).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            const mm = pad(date.getMonth() + 1);
+            const dd = pad(date.getDate());
+            const hh = pad(date.getHours());
+            const mi = pad(date.getMinutes());
+            return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+        }
+
+        // Set next expected time
+        async function setNextExpectedTime() {
+            try {
+                const response = await fetch(`${API_URL}/status`);
+                const data = await response.json();
+                
+                if (data.predictor.initialized && data.predictor.next_expected) {
+                    const nextTime = new Date(data.predictor.next_expected);
+                    const timestampField = document.getElementById('rt-timestamp');
+                    
+                    // Format for datetime-local input (local time, no timezone conversion)
+                    const formattedValue = toDatetimeLocalValue(nextTime);
+                    
+                    // Force update the timestamp field
+                    timestampField.value = formattedValue;
+                    timestampField.defaultValue = formattedValue;
+                    
+                    // Trigger change event
+                    timestampField.dispatchEvent(new Event('change', { bubbles: true }));
+                    timestampField.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    // Force browser to recognize the new value
+                    timestampField.blur();
+                    timestampField.focus();
+                    
+                    // Visual feedback with green background
+                    timestampField.style.backgroundColor = '#d4edda';
+                    timestampField.style.transition = 'background-color 0.3s';
+                    setTimeout(() => {
+                        timestampField.style.backgroundColor = '';
+                    }, 1500);
+                    
+                    // Format for display: DD/MM/YYYY, HH:MM:SS (local)
+                    const displayTime = nextTime.toLocaleString('en-GB', {
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    
+                    showAlert('rt-status', `<strong>Next Expected:</strong> ${displayTime}`, 'success');
+                } else {
+                    showAlert('rt-status', 'System not initialized', 'warning');
+                }
+            } catch (error) {
+                showAlert('rt-status', `Error: ${error.message}`, 'warning');
+            }
+        }
+        
+        // Add real-time measurement
+        async function addRealtimeMeasurement() {
+            const timestamp = document.getElementById('rt-timestamp').value;
+            const power = parseFloat(document.getElementById('rt-power').value);
+            
+            if (!timestamp || isNaN(power)) {
+                showAlert('rt-status', 'Please enter valid timestamp and power', 'warning');
+                return;
+            }
+            
+            try {
+                showAlert('rt-status', 'Adding measurement...', 'info');
+                
+                // Convert datetime-local to a naive ISO-like string (no timezone), matching backend expectations
+                // The datetime-local value is in format "YYYY-MM-DDTHH:mm"; append seconds without 'Z'
+                const isoTimestamp = timestamp + ':00';
+                
+                console.log('=== MEASUREMENT DEBUG ===');
+                console.log('Input timestamp field value:', timestamp);
+                console.log('Converted to ISO:', isoTimestamp);
+                console.log('Power:', power);
+                
+                const response = await fetch(`${API_URL}/measurement/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        timestamp: isoTimestamp,
+                        power_W: power,
+                        trigger_optimization: false
+                    })
+                });
+                
+                const result = await response.json();
+                
+                console.log('API Response:', result);
+                console.log('Response OK:', response.ok);
+                console.log('Result Status:', result.status);
+                console.log('Result.result exists:', !!result.result);
+                
+                if (!response.ok) {
+                    // API returned an error
+                    throw new Error(result.detail || 'Server error');
+                }
+                
+                // Success - check the status
+                if (result.status === 'updated') {
+                    showAlert('rt-status', 'Success! Measurement added and window updated.', 'success');
+                    
+                    document.getElementById('rt-power').value = '';
+                    
+                    // Set next expected time (format as local datetime-local value)
+                    if (result.result && result.result.next_expected_time) {
+                        const nextLocal = new Date(result.result.next_expected_time);
+                        document.getElementById('rt-timestamp').value = toDatetimeLocalValue(nextLocal);
+                    }
+                    
+                    await refreshStatus();
+                    
+                    // Update predictions
+                    try {
+                        const predResponse = await fetch(`${API_URL}/predictions/current`);
+                        if (predResponse.ok) {
+                            const predData = await predResponse.json();
+                            
+                            document.getElementById('solar-mean').textContent = Math.round(predData.summary.mean_W);
+                            document.getElementById('solar-peak').textContent = Math.round(predData.summary.max_W);
+                            
+                            if (solarChart) {
+                                solarChart.data.datasets[0].data = predData.predictions_W;
+                                solarChart.update();
+                            }
+                        }
+                    } catch (predError) {
+                        console.error('Failed to update predictions:', predError);
+                    }
+                } else if (result.status === 'ignored') {
+                    // Measurement was ignored - provide helpful feedback
+                    console.error('Measurement ignored:', result);
+                    
+                    let message = '';
+                    if (result.result && result.result.reason === 'timestamp_not_sequential') {
+                        // Get the expected timestamp from system state
+                        const statusResp = await fetch(`${API_URL}/status`);
+                        const statusData = await statusResp.json();
+                        
+                        if (statusData.predictor && statusData.predictor.next_expected) {
+                            const expectedTime = new Date(statusData.predictor.next_expected);
+                            const displayTime = expectedTime.toLocaleString('en-GB', {
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                year: 'numeric', 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
+                            message = `⚠️ <strong>Wrong timestamp!</strong><br>` +
+                                     `Measurements must be added sequentially.<br>` +
+                                     `<strong>Next expected time:</strong> ${displayTime}<br>` +
+                                     `<em>Tip: Click "Set Next Expected Time" button to auto-fill the correct timestamp.</em>`;
+                        } else {
+                            message = `⚠️ Measurement ignored: Timestamp is not the next expected time. Please add measurements sequentially.`;
+                        }
+                    } else {
+                        const reason = (result.result && result.result.reason) || result.reason || 'unknown reason';
+                        message = `⚠️ Measurement ignored: ${reason}`;
+                    }
+                    
+                    showAlert('rt-status', message, 'warning');
+                } else {
+                    // Unexpected status
+                    console.error('Unexpected result:', result);
+                    const reason = result.reason || result.message || JSON.stringify(result);
+                    showAlert('rt-status', `Could not add measurement: ${reason}`, 'warning');
+                }
+                
+            } catch (error) {
+                showAlert('rt-status', `Error: ${error.message}`, 'warning');
+            }
+        }
+        
+        // Import batch measurements
+        async function importBatchMeasurements() {
+            const input = document.getElementById('batch-measurements').value;
+            
+            if (!input.trim()) {
+                showAlert('batch-status', 'Please enter measurements', 'warning');
+                return;
+            }
+            
+            try {
+                const lines = input.trim().split('\n');
+                const measurements = [];
+                
+                for (const line of lines) {
+                    const [timestamp, power] = line.split(',').map(s => s.trim());
+                    measurements.push({
+                        timestamp: new Date(timestamp).toISOString(),
+                        power_W: parseFloat(power)
+                    });
+                }
+                
+                showAlert('batch-status', `Importing ${measurements.length} measurements...`, 'info');
+                
+                const response = await fetch(`${API_URL}/measurement/batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        measurements,
+                        trigger_optimization: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail);
+                }
+                
+                const result = await response.json();
+                
+                showAlert('batch-status', 
+                    `Complete! Total: ${result.total}, Success: ${result.successful}`,
+                    'success'
+                );
+                
+                await refreshStatus();
+                
+            } catch (error) {
+                showAlert('batch-status', `Error: ${error.message}`, 'warning');
+            }
+        }
+        
+        // Run optimization
+        async function runOptimization() {
+            if (!solarPrediction) {
+                showAlert('opt-status', 'Please run solar prediction first', 'warning');
+                return;
+            }
+            
+            const startIndex = parseInt(document.getElementById('opt-start-index').value);
+            
+            try {
+                showAlert('opt-status', 'Running optimization... (10-30 seconds)', 'info');
+                
+                const response = await fetch(`${API_URL}/optimize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start_index: startIndex,
+                        force: true
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail);
+                }
+                
+                optimizationResults = await response.json();
+                
+                displayResults(optimizationResults);
+                
+                showAlert('opt-status', 'Optimization complete!', 'success');
+                
+            } catch (error) {
+                showAlert('opt-status', `Error: ${error.message}`, 'warning');
+            }
+        }
+        
+        // Display optimization results
+        function displayResults(results) {
+            document.getElementById('opt-cost').textContent = results.total_cost.toFixed(2);
+            document.getElementById('opt-import').textContent = results.total_import_kWh.toFixed(2);
+            document.getElementById('opt-export').textContent = results.total_export_kWh.toFixed(2);
+            
+            const labels = results.schedule.map((_, i) => `H${i}`);
+            
+            powerChart.data.labels = labels;
+            powerChart.data.datasets[0].data = results.schedule.map(s => s.solar_kW);
+            powerChart.data.datasets[1].data = results.schedule.map(s => s.load_kW);
+            powerChart.update();
+            
+            batteryChart.data.labels = labels;
+            batteryChart.data.datasets[0].data = results.schedule.map(s => s.P_charge);
+            batteryChart.data.datasets[1].data = results.schedule.map(s => s.P_discharge);
+            batteryChart.update();
+            
+            socChart.data.labels = labels;
+            socChart.data.datasets[0].data = results.schedule.map(s => s.SOC);
+            socChart.update();
+            
+            const tbody = document.getElementById('schedule-tbody');
+            tbody.innerHTML = '';
+            
+            results.schedule.forEach(item => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${item.hour}</td>
+                    <td>${item.solar_kW.toFixed(2)}</td>
+                    <td>${item.load_kW.toFixed(2)}</td>
+                    <td>${item.P_charge.toFixed(2)}</td>
+                    <td>${item.P_discharge.toFixed(2)}</td>
+                    <td>${item.P_import.toFixed(2)}</td>
+                    <td>${item.P_export.toFixed(2)}</td>
+                    <td>${item.SOC.toFixed(1)}</td>
+                    <td>${item.tariff_import.toFixed(2)}</td>
+                    <td>${item.tariff_export.toFixed(2)}</td>
+                `;
+            });
+            
+            document.getElementById('opt-results').style.display = 'block';
+        }
+        
+        // Download CSV
+        function downloadCSV() {
+            if (!optimizationResults) return;
+            
+            let csv = 'Hour,Solar_kW,Load_kW,Charge_kW,Discharge_kW,Import_kW,Export_kW,SOC_%,Tariff_Import,Tariff_Export\n';
+            
+            optimizationResults.schedule.forEach(item => {
+                csv += `${item.hour},${item.solar_kW},${item.load_kW},${item.P_charge},`;
+                csv += `${item.P_discharge},${item.P_import},${item.P_export},${item.SOC},`;
+                csv += `${item.tariff_import},${item.tariff_export}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `battery_schedule_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+        
+        // Toggle auto-optimization
+        async function toggleAutoOptimization() {
+            const enabled = document.getElementById('auto-opt-enabled').checked;
+            
+            try {
+                const response = await fetch(`${API_URL}/auto-optimization/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: enabled })
+                });
+                
+                const data = await response.json();
+                
+                showAlert('auto-opt-status', `${data.message}`, 'success');
+                
+                await refreshSystemStats();
+                
+            } catch (error) {
+                showAlert('auto-opt-status', `Error: ${error.message}`, 'warning');
+                document.getElementById('auto-opt-enabled').checked = !enabled;
+            }
+        }
+        
+        // Refresh system statistics
+        async function refreshSystemStats() {
+            try {
+                const response = await fetch(`${API_URL}/status`);
+                const data = await response.json();
+                
+                document.getElementById('total-measurements').textContent = 
+                    data.system_state.total_measurements;
+                document.getElementById('total-optimizations').textContent = 
+                    data.system_state.total_optimizations;
+                
+                if (data.predictor && data.predictor.initialized) {
+                    document.getElementById('stat-window-size').textContent = 
+                        data.predictor.window_size;
+                    document.getElementById('stat-pred-available').textContent = 
+                        data.predictor.predictions_available ? 'Yes' : 'No';
+                    document.getElementById('stat-last-update').textContent = 
+                        new Date(data.predictor.last_update).toLocaleString();
+                }
+                
+                const autoOptEnabled = data.optimizer.auto_enabled;
+                document.getElementById('auto-opt-enabled').checked = autoOptEnabled;
+                document.getElementById('auto-opt-display').textContent = 
+                    autoOptEnabled ? 'Enabled ✓' : 'Disabled ✗';
+                
+            } catch (error) {
+                console.error('Failed to refresh stats:', error);
+            }
+        }
+        
+        // Refresh performance metrics
+        async function refreshPerformance() {
+            try {
+                const response = await fetch(`${API_URL}/performance/accuracy?hours=24`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    return;
+                }
+                
+                document.getElementById('perf-mae').textContent = data.mean_absolute_error_W.toFixed(1);
+                document.getElementById('perf-rmse').textContent = data.rmse_W.toFixed(1);
+                document.getElementById('perf-mape').textContent = data.mean_absolute_percent_error.toFixed(1);
+                
+            } catch (error) {
+                console.error('Failed to refresh performance:', error);
+            }
+        }
+        
+        // Feed from historical dataset
+        async function feedFromHistorical() {
+            const numHours = document.getElementById('numHours').value;
+            const resultDiv = document.getElementById('feedResult');
+            
+            resultDiv.innerHTML = '<div class="alert alert-info">Loading data from historical dataset...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/measurement/feed-from-historical?num_hours=${numHours}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    if (result.status === 'success') {
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-success">
+                                <strong>Success!</strong><br>
+                                Added <strong>${result.rows_added}</strong> rows to sliding window<br>
+                                Window now ends at: <strong>${new Date(result.new_window_end).toLocaleString()}</strong><br>
+                                Predictions automatically updated!
+                            </div>
+                        `;
+                        
+                        // Refresh the status and window display
+                        await refreshStatus();
+                        await updateWindowChart();
+                        
+                        // Update solar predictions display
+                        const predResponse = await fetch(`${API_URL}/predictions/current`);
+                        const predData = await predResponse.json();
+                        
+                        document.getElementById('solar-mean').textContent = Math.round(predData.summary.mean_W);
+                        document.getElementById('solar-peak').textContent = Math.round(predData.summary.max_W);
+                        document.getElementById('solar-energy').textContent = predData.summary.total_kWh.toFixed(2);
+                        
+                        if (solarChart) {
+                            solarChart.data.datasets[0].data = predData.predictions_W;
+                            solarChart.update();
+                        }
+                        
+                    } else if (result.status === 'no_more_data') {
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-warning">
+                                <strong>No more data available</strong><br>
+                                ${result.message}<br>
+                                Current end: ${new Date(result.current_end).toLocaleString()}
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <strong>Error:</strong> ${result.detail || 'Unknown error'}
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>Failed to fetch:</strong> ${error.message}<br>
+                        Is the API server running?
+                    </div>
+                `;
+            }
+        }
+        
+        // Initialize on load
+        window.onload = function() {
+            initializeCharts();
+            refreshStatus();
+            refreshSystemStats();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(refreshSystemStats, 30000);
+        };
+    </script>
+</body>
+</html>
