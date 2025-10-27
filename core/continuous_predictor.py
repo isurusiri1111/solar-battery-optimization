@@ -158,27 +158,9 @@ class ContinuousSolarPredictor:
         }
     
     def _predict_from_current_window(self) -> Tuple[List[float], pd.DataFrame]:
-        # If predictor is in demo mode (no model loaded), generate mock predictions
+        # Require all model components to be loaded
         if self.predictor.model is None or self.predictor.scaler_features is None or self.predictor.scaler_target is None:
-            logger.warning("Using demo mode for continuous predictions")
-            last_time = self.last_update_time
-            pred_timestamps = [last_time + timedelta(hours=i+1) for i in range(24)]
-            
-            # Generate realistic solar pattern (scaled to ~6000W average)
-            hours = np.array([t.hour for t in pred_timestamps])
-            mock_predictions = np.where(
-                (hours >= 6) & (hours < 18),
-                np.maximum(0, 8000 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 500),
-                np.zeros(24)
-            )
-            mock_predictions = np.maximum(0, mock_predictions)
-            
-            pred_df = pd.DataFrame({
-                'timestamp': pred_timestamps,
-                'predicted_power_W': mock_predictions
-            })
-            
-            return mock_predictions.tolist(), pred_df
+            raise ValueError("ML model files not loaded. Ensure models/ directory contains all required files (.keras, .pkl, .json)")
         
         X_all = np.zeros((len(self.sliding_window_df), len(self.predictor.ALL_FEATURES)))
         

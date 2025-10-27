@@ -53,12 +53,12 @@ class SolarPredictor:
             scaler_t_files = list(self.models_dir.glob("scaler_target_*.pkl"))
             
             if not all([model_files, config_files, scaler_f_files, scaler_t_files]):
-                logger.warning("Model files not found - using demo mode with mock predictions")
-                # Set default configuration for demo mode
-                self.config = {"sequence_length": 48, "selected_feature_indices": list(range(len(self.ALL_FEATURES)))}
-                self.selected_feature_indices = self.config["selected_feature_indices"]
-                self.sequence_length = 48
-                return
+                missing = []
+                if not model_files: missing.append("*.keras")
+                if not config_files: missing.append("*.json")
+                if not scaler_f_files: missing.append("scaler_features_*.pkl")
+                if not scaler_t_files: missing.append("scaler_target_*.pkl")
+                raise FileNotFoundError(f"Required model files missing: {', '.join(missing)}")
             
             self.model = tf.keras.models.load_model(str(model_files[0]))
             self.scaler_features = joblib.load(str(scaler_f_files[0]))
@@ -70,11 +70,11 @@ class SolarPredictor:
             self.selected_feature_indices = self.config["selected_feature_indices"]
             self.sequence_length = self.config.get("sequence_length", 48)
             
-            logger.info(f"Models loaded. Sequence: {self.sequence_length}h")
+            logger.info(f"Models loaded successfully. Sequence: {self.sequence_length}h")
             
         except Exception as e:
             logger.error(f"Failed to load models: {e}")
-            logger.warning("Continuing in demo mode")
+            raise
     
     def create_features(self, df: pd.DataFrame, latitude: float = 9.67) -> pd.DataFrame:
         df = df.copy()
@@ -181,43 +181,9 @@ class SolarPredictor:
             if len(df_subset) < self.sequence_length:
                 raise ValueError(f"Need {self.sequence_length} hours. Found {len(df_subset)}")
             
-            # If model is not loaded (demo mode), generate mock predictions
+            # Require all model components to be loaded
             if self.model is None or self.scaler_features is None or self.scaler_target is None:
-                logger.warning("Using demo mode - generating mock solar predictions")
-                
-                # Find datetime column
-                datetime_col = None
-                for col in ['datetime', 'timestamp', 'time', 'Date']:
-                    if col in df_subset.columns:
-                        datetime_col = col
-                        break
-                
-                if datetime_col:
-                    last_time = pd.to_datetime(df_subset[datetime_col].iloc[-1])
-                else:
-                    # If no datetime column, use current time
-                    last_time = pd.Timestamp.now()
-                
-                pred_timestamps = [last_time + pd.Timedelta(hours=i+1) for i in range(24)]
-                
-                # Generate realistic-looking solar pattern (sine wave for day/night)
-                # Scaled to match typical solar production (~6000W average during daylight)
-                hours = np.array([t.hour for t in pred_timestamps])
-                # Solar production: 0 at night (0-6, 18-24), peak around noon
-                mock_predictions = np.where(
-                    (hours >= 6) & (hours < 18),
-                    np.maximum(0, 8000 * np.sin((hours - 6) * np.pi / 12) + np.random.randn(24) * 500),
-                    np.zeros(24)
-                )
-                mock_predictions = np.maximum(0, mock_predictions)  # Ensure non-negative
-                
-                pred_df = pd.DataFrame({
-                    'timestamp': pred_timestamps,
-                    'predicted_power_W': mock_predictions
-                })
-                
-                logger.info(f"Demo prediction (24h): Mean={np.mean(mock_predictions):.1f}W (MOCK DATA)")
-                return mock_predictions.tolist(), pred_df
+                raise ValueError("ML model files not loaded. Ensure models/ directory contains all required files (.keras, .pkl, .json)")
             
             df_subset = self.create_features(df_subset)
             
