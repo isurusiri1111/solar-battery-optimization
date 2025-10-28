@@ -179,6 +179,9 @@ class ContinuousSolarPredictor:
         last_time = self.last_update_time
         pred_timestamps = [last_time + timedelta(hours=i+1) for i in range(len(predictions))]
         
+        # Apply time-of-day correction to ensure proper day/night cycle
+        predictions = self.predictor._apply_solar_cycle_correction(predictions, pred_timestamps)
+        
         pred_df = pd.DataFrame({
             'timestamp': pred_timestamps,
             'predicted_power_W': predictions

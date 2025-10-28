@@ -76,6 +76,39 @@ class SolarPredictor:
             logger.error(f"Failed to load models: {e}")
             raise
     
+    def _apply_solar_cycle_correction(self, predictions: np.ndarray, timestamps: List) -> np.ndarray:
+        """Apply time-of-day correction to ensure realistic solar day/night cycle"""
+        corrected = []
+        
+        for i, (pred, ts) in enumerate(zip(predictions, timestamps)):
+            hour = ts.hour
+            
+            # Night hours (22:00 - 05:00): Force to zero
+            if hour >= 22 or hour <= 5:
+                corrected.append(0.0)
+            
+            # Dawn transition (6:00 - 7:00): Gradual increase
+            elif hour == 6:
+                corrected.append(min(pred * 0.2, 500))  # Max 500W at 6 AM
+            elif hour == 7:
+                corrected.append(min(pred * 0.4, 1500))  # Max 1500W at 7 AM
+            
+            # Dusk transition (18:00 - 21:00): Gradual decrease  
+            elif hour == 18:
+                corrected.append(min(pred * 0.7, 3000))  # Max 3000W at 6 PM
+            elif hour == 19:
+                corrected.append(min(pred * 0.4, 1500))  # Max 1500W at 7 PM
+            elif hour == 20:
+                corrected.append(min(pred * 0.2, 500))   # Max 500W at 8 PM
+            elif hour == 21:
+                corrected.append(min(pred * 0.1, 100))   # Max 100W at 9 PM
+            
+            # Daylight hours (8:00 - 17:00): Use model prediction
+            else:
+                corrected.append(max(0, pred))
+        
+        return np.array(corrected)
+    
     def create_features(self, df: pd.DataFrame, latitude: float = 9.67) -> pd.DataFrame:
         df = df.copy()
         
@@ -202,6 +235,9 @@ class SolarPredictor:
             
             last_time = pd.to_datetime(df_subset['datetime'].iloc[-1])
             pred_timestamps = [last_time + pd.Timedelta(hours=i+1) for i in range(len(predictions))]
+            
+            # Apply time-of-day correction to ensure proper day/night cycle
+            predictions = self._apply_solar_cycle_correction(predictions, pred_timestamps)
             
             pred_df = pd.DataFrame({
                 'timestamp': pred_timestamps,
