@@ -1224,19 +1224,19 @@
                 const importCost = item.P_import * item.tariff_import;
                 const exportRevenue = item.P_export * item.tariff_export;
                 
-                // Categorize import by time period
-                if (item.tariff_import === 21) {
+                // Categorize import by time period (with tolerance for floating point)
+                if (Math.abs(item.tariff_import - 21) < 0.1) {
                     importOffpeak += importCost;
-                } else if (item.tariff_import === 35) {
+                } else if (Math.abs(item.tariff_import - 35) < 0.1) {
                     importDay += importCost;
-                } else if (item.tariff_import === 67) {
+                } else if (Math.abs(item.tariff_import - 67) < 0.1) {
                     importPeak += importCost;
                 }
                 
-                // Categorize export by tariff
-                if (item.tariff_export === 19.61) {
+                // Categorize export by tariff (with tolerance for floating point)
+                if (Math.abs(item.tariff_export - 19.61) < 0.1) {
                     exportSolar += exportRevenue;
-                } else if (item.tariff_export === 45.80) {
+                } else if (Math.abs(item.tariff_export - 45.80) < 0.1) {
                     exportPeak += exportRevenue;
                 }
             });
@@ -1396,7 +1396,8 @@
             }
             
             // SCENARIO 3: Solar + Battery (No EMS - Simple charging)
-            // Simple strategy: Charge battery from solar when available, discharge at night
+            // Simple strategy: Always charge battery from excess solar, discharge to meet load at night
+            // No strategic timing, no peak export optimization
             let s3Import = 0, s3Export = 0, s3Cost = 0;
             let batterySOC = 50; // Start at 50%
             const batteryCapacity = 100; // kWh
@@ -1410,32 +1411,34 @@
                 const load = loadData[h];
                 let netPower = solar - load;
                 
-                // Simple battery logic: charge during day, discharge at night
-                if (h >= 6 && h < 18 && solar > 0) {
-                    // Daytime: try to charge battery with excess solar
-                    if (netPower > 0 && batterySOC < maxSOC) {
+                // Simple battery logic: charge whenever there's excess solar, discharge when needed
+                if (netPower > 0) {
+                    // Excess solar - try to charge battery first, then export
+                    if (batterySOC < maxSOC) {
                         const chargeAmount = Math.min(netPower, maxCharge, (maxSOC - batterySOC));
                         batterySOC += chargeAmount;
                         netPower -= chargeAmount;
                     }
+                    // Export any remaining excess (but at standard rate only)
+                    if (netPower > 0) {
+                        const exportKWh = netPower;
+                        s3Export += exportKWh;
+                        s3Cost -= exportKWh * tariffs.export.solar; // Always standard rate
+                    }
                 } else {
-                    // Night: discharge battery if needed
-                    if (netPower < 0 && batterySOC > minSOC) {
-                        const dischargeAmount = Math.min(Math.abs(netPower), maxDischarge, (batterySOC - minSOC));
+                    // Need more power - try battery first, then import
+                    const deficit = Math.abs(netPower);
+                    if (batterySOC > minSOC) {
+                        const dischargeAmount = Math.min(deficit, maxDischarge, (batterySOC - minSOC));
                         batterySOC -= dischargeAmount;
                         netPower += dischargeAmount;
                     }
-                }
-                
-                // Handle remaining import/export
-                if (netPower < 0) {
-                    const importKWh = Math.abs(netPower);
-                    s3Import += importKWh;
-                    s3Cost += importKWh * getImportTariff(h);
-                } else if (netPower > 0) {
-                    const exportKWh = netPower;
-                    s3Export += exportKWh;
-                    s3Cost -= exportKWh * getExportTariff(h, false); // No peak export benefit
+                    // Import any remaining deficit
+                    if (netPower < 0) {
+                        const importKWh = Math.abs(netPower);
+                        s3Import += importKWh;
+                        s3Cost += importKWh * getImportTariff(h);
+                    }
                 }
             }
             
