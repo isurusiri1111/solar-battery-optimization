@@ -17,7 +17,32 @@ class ContinuousOptimizer:
         (self.history_dir / "optimizations").mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.optimizer = BatteryOptimizer()
-        self.battery_params = {"E_capacity": 100, "P_charge_max": 25, "P_discharge_max": 25, "SOC_min": 0.2, "SOC_max": 0.9, "eta_charge": 0.95, "eta_discharge": 0.95, "SOC_initial": 0.5}
+        # Use a smaller, more realistic default battery for baseline scenarios
+        self.battery_params = {
+            "E_capacity": 12,            # kWh
+            "P_charge_max": 3,           # kW
+            "P_discharge_max": 3,        # kW
+            "SOC_min": 0.2,              # 20%
+            "SOC_max": 0.9,              # 90%
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "SOC_initial": 0.5           # 50%
+        }
+        # Propagate these parameters to the core optimizer
+        try:
+            self.optimizer.battery_params.update({
+                "E_capacity": float(self.battery_params["E_capacity"]),
+                "P_charge_max": float(self.battery_params["P_charge_max"]),
+                "P_discharge_max": float(self.battery_params["P_discharge_max"]),
+                "SOC_min": float(self.battery_params["SOC_min"])*100.0 if self.battery_params["SOC_min"] <= 1 else float(self.battery_params["SOC_min"]),
+                "SOC_max": float(self.battery_params["SOC_max"])*100.0 if self.battery_params["SOC_max"] <= 1 else float(self.battery_params["SOC_max"]),
+                "SOC_initial": float(self.battery_params["SOC_initial"])*100.0 if self.battery_params["SOC_initial"] <= 1 else float(self.battery_params["SOC_initial"]),
+                "eta_charge": float(self.battery_params["eta_charge"]),
+                "eta_discharge": float(self.battery_params["eta_discharge"]),
+            })
+        except Exception:
+            # If anything goes wrong, leave optimizer defaults and log later
+            pass
         self.is_auto_optimization_enabled = False
         self.last_optimization_result = None
         logger.info("Continuous optimizer initialized")

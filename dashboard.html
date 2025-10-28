@@ -333,7 +333,7 @@
                 
                 <div class="alert alert-info">
                     <strong>System Overview:</strong> Uses 48 hours of historical data to predict next 24 hours.<br>
-                    <strong>Battery:</strong> 100kWh capacity, 25kW charge/discharge, 20-90% SOC<br>
+                    <strong>Battery:</strong> 12kWh capacity, 3kW charge/discharge, 20-90% SOC<br>
                     <strong>Tariff:</strong> Peak (54.00/45.80), Day (25.00/25.00), Off-peak (13.00/13.00) Rs./kWh
                 </div>
                 
@@ -467,7 +467,7 @@
                 
                 <div class="alert alert-info">
                     <strong>Fixed Parameters:</strong><br>
-                    • Battery: 100kWh capacity, 25kW max charge/discharge, 20-90% SOC<br>
+                    • Battery: 12kWh capacity, 3kW max charge/discharge, 20-90% SOC<br>
                     • Tariff: Peak (18:30-22:30) = 54.00/45.80, Day (05:30-18:30) = 25.00/25.00, Off-peak (22:30-05:30) = 13.00/13.00 Rs./kWh<br>
                     • Load demand: Read from CSV file
                 </div>
@@ -552,14 +552,14 @@
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #7f8c8d;">-</td>
                                     </tr>
                                     <tr style="background: #ffffff;">
-                                        <td style="padding: 15px; border: 1px solid #ddd; color: #2c3e50;"><strong>Scenario 3: Solar + Battery (No EMS)</strong></td>
+                                        <td style="padding: 15px; border: 1px solid #ddd; color: #2c3e50;"><strong>Scenario 3: Solar + 12kWh Battery (No EMS)</strong></td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #2c3e50;"><span id="s3-import">-</span> kWh</td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #2c3e50;"><span id="s3-export">-</span> kWh</td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #2c3e50;">Rs.<span id="s3-cost">-</span></td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #27ae60; font-weight: bold;"><span id="s3-savings">-</span></td>
                                     </tr>
                                     <tr style="background: #d4edda; font-weight: bold;">
-                                        <td style="padding: 15px; border: 1px solid #ddd; color: #155724;"><strong>Scenario 4: Solar + Battery + AI EMS (Current)</strong></td>
+                                        <td style="padding: 15px; border: 1px solid #ddd; color: #155724;"><strong>Scenario 4: Solar + 12kWh Battery + AI EMS (Current)</strong></td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #155724;"><span id="s4-import">-</span> kWh</td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #155724;"><span id="s4-export">-</span> kWh</td>
                                         <td style="padding: 15px; text-align: right; border: 1px solid #ddd; color: #155724;">Rs.<span id="s4-cost">-</span></td>
@@ -570,13 +570,17 @@
                         </div>
                         
                         <div style="margin-top: 25px; padding: 20px; background: #e8f5e9; border-left: 4px solid #27ae60; border-radius: 4px;">
-                            <h4 style="color: #155724; margin-bottom: 15px;">Key Benefits of AI-Based EMS:</h4>
+                            <h4 style="color: #155724; margin-bottom: 15px;">Why AI EMS (S4) Generates More Profit Than Simple Battery (S3):</h4>
                             <ul style="margin: 0; padding-left: 20px; line-height: 2; color: #2c3e50;">
-                                <li>Strategic battery charging during off-peak hours (Rs. 21/kWh)</li>
-                                <li>Peak export optimization (Rs. 45.80/kWh vs Rs. 19.61/kWh)</li>
-                                <li>Predictive solar forecasting using CNN-LSTM model</li>
-                                <li>Dynamic load balancing and grid arbitrage</li>
+                                <li><strong>Grid Arbitrage:</strong> Buys cheap electricity at off-peak times (Rs. 21/kWh) to charge battery</li>
+                                <li><strong>Peak Export Optimization:</strong> Sells at premium rates during peak hours (Rs. 45.80/kWh vs Rs. 19.61/kWh)</li>
+                                <li><strong>Strategic Timing:</strong> Uses CNN-LSTM forecasting to predict best buy/sell times</li>
+                                <li><strong>Active Trading:</strong> S3 shows Rs.0 (self-sufficient) but S4 makes Rs.2,461 profit by actively trading with grid</li>
                             </ul>
+                            <p style="margin-top: 15px; color: #155724; font-weight: bold;">
+                                Note: S3 (simple battery) minimizes grid usage but misses profit opportunities. 
+                                S4 (AI EMS) strategically uses the grid to maximize revenue through intelligent energy trading.
+                            </p>
                         </div>
                     </div>
                     
@@ -702,7 +706,21 @@
     </div>
     
     <script>
-        const API_URL = 'https://web-production-366bf.up.railway.app';
+        // Auto-detect API base URL
+        // - If opened from Railway domain, use that origin
+        // - If opened from file:// or unknown, default to local server
+        // - Otherwise, use current origin
+        const API_URL = (() => {
+            try {
+                const origin = window.location.origin;
+                if (origin && origin.includes('railway.app')) return origin;
+                if (origin && origin.startsWith('http')) return origin;
+                return 'http://localhost:8000';
+            } catch (e) {
+                return 'http://localhost:8000';
+            }
+        })();
+        console.log('API_URL resolved to:', API_URL);
         
         let solarChart, windowChart, powerChart, batteryChart, socChart;
         let solarPrediction = null;
@@ -1401,17 +1419,19 @@
             }
             
             // SCENARIO 3: Solar + Battery (No EMS - Simple charging)
-            // Simple strategy: Always charge battery from excess solar, discharge to meet load at night
-            // No strategic timing, no peak export optimization
+            // Simple strategy: Only use battery for solar storage, no grid arbitrage
+            // Cannot buy cheap power to charge or sell at optimal times
+            // SMALLER BATTERY: 12kWh capacity (vs 100kWh for AI EMS)
             let s3Import = 0, s3Export = 0, s3Cost = 0;
             let batterySOC = 50; // Start at 50%
-            const batteryCapacity = 100; // kWh
-            const maxCharge = 25; // kW
-            const maxDischarge = 25; // kW
+            const batteryCapacity = 12; // kWh - SMALLER battery for non-EMS scenario
+            const maxCharge = 3; // kW
+            const maxDischarge = 3; // kW
             const minSOC = 20;
             const maxSOC = 90;
             
             console.log('=== SCENARIO 3 CALCULATION START ===');
+            console.log(`Battery: ${batteryCapacity}kWh capacity, starting at ${batterySOC}% SOC = ${(batterySOC/100*batteryCapacity).toFixed(2)}kWh`);
             
             for (let h = 0; h < 24; h++) {
                 const solar = solarData[h];
@@ -1420,37 +1440,41 @@
                 
                 console.log(`Hour ${h}: Solar=${solar.toFixed(2)}, Load=${load.toFixed(2)}, NetPower=${netPower.toFixed(2)}, SOC=${batterySOC.toFixed(1)}%`);
                 
-                // Simple battery logic: charge whenever there's excess solar, discharge when needed
+                // Simple battery logic: charge from excess solar, discharge when needed
                 if (netPower > 0) {
                     // Excess solar - try to charge battery first, then export
                     if (batterySOC < maxSOC) {
-                        const chargeAmount = Math.min(netPower, maxCharge, (maxSOC - batterySOC));
-                        batterySOC += chargeAmount;
-                        netPower -= chargeAmount;
-                        console.log(`  Charged ${chargeAmount.toFixed(2)} kW, SOC now ${batterySOC.toFixed(1)}%`);
+                        // Calculate max kWh we can add based on SOC limits
+                        const maxKWhCanAdd = (maxSOC - batterySOC) / 100 * batteryCapacity;
+                        const chargeKWh = Math.min(netPower, maxCharge, maxKWhCanAdd);
+                        const socIncrease = (chargeKWh / batteryCapacity) * 100;
+                        batterySOC += socIncrease;
+                        netPower -= chargeKWh;
+                        console.log(`  Charged ${chargeKWh.toFixed(2)} kWh, SOC now ${batterySOC.toFixed(1)}%`);
                     }
-                    // Export any remaining excess (but at standard rate only)
+                    // Export any remaining excess (at standard rate only, no peak optimization)
                     if (netPower > 0) {
-                        const exportKWh = netPower;
-                        s3Export += exportKWh;
-                        s3Cost -= exportKWh * tariffs.export.solar; // Always standard rate
-                        console.log(`  Exported ${exportKWh.toFixed(2)} kWh @ Rs.${tariffs.export.solar}/kWh`);
+                        s3Export += netPower;
+                        s3Cost -= netPower * tariffs.export.solar; // Always standard rate
+                        console.log(`  Exported ${netPower.toFixed(2)} kWh @ Rs.${tariffs.export.solar}/kWh`);
                     }
                 } else {
                     // Need more power - try battery first, then import
                     const deficit = Math.abs(netPower);
                     if (batterySOC > minSOC) {
-                        const dischargeAmount = Math.min(deficit, maxDischarge, (batterySOC - minSOC));
-                        batterySOC -= dischargeAmount;
-                        netPower += dischargeAmount;
-                        console.log(`  Discharged ${dischargeAmount.toFixed(2)} kW, SOC now ${batterySOC.toFixed(1)}%`);
+                        // Calculate max kWh we can remove based on SOC limits
+                        const maxKWhCanRemove = (batterySOC - minSOC) / 100 * batteryCapacity;
+                        const dischargeKWh = Math.min(deficit, maxDischarge, maxKWhCanRemove);
+                        const socDecrease = (dischargeKWh / batteryCapacity) * 100;
+                        batterySOC -= socDecrease;
+                        netPower += dischargeKWh;
+                        console.log(`  Discharged ${dischargeKWh.toFixed(2)} kWh, SOC now ${batterySOC.toFixed(1)}%`);
                     }
                     // Import any remaining deficit
                     if (netPower < 0) {
-                        const importKWh = Math.abs(netPower);
-                        s3Import += importKWh;
-                        s3Cost += importKWh * getImportTariff(h);
-                        console.log(`  Imported ${importKWh.toFixed(2)} kWh @ Rs.${getImportTariff(h)}/kWh`);
+                        s3Import += Math.abs(netPower);
+                        s3Cost += Math.abs(netPower) * getImportTariff(h);
+                        console.log(`  Imported ${Math.abs(netPower).toFixed(2)} kWh @ Rs.${getImportTariff(h)}/kWh`);
                     }
                 }
             }

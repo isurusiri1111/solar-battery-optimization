@@ -5,6 +5,7 @@ SIMPLIFIED: Single CSV, Fixed Battery Params, Fixed Tariff
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import pandas as pd
@@ -142,14 +143,22 @@ def home():
         "mode": "simplified_single_csv",
         "features": [
             "Single CSV with solar + load + weather",
-            "Fixed battery: 100kWh, 25kW, 20-90% SOC",
+            "Fixed battery: 12kWh, 3kW, 20-90% SOC",
             "Fixed tariff: Peak/Day/Off-peak",
             "48h sliding window → 24h predictions",
             "Automatic optimization"
         ],
-        "battery": "100kWh, 25kW charge/discharge, 20-90% SOC",
+    "battery": "12kWh, 3kW charge/discharge, 20-90% SOC",
         "tariff": "Peak(54/45.80), Day(25/25), Off-peak(13/13) Rs./kWh"
     }
+
+@app.get("/dashboard.html")
+async def get_dashboard():
+    """Serve the dashboard HTML file"""
+    dashboard_path = Path(__file__).parent / "dashboard.html"
+    if not dashboard_path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return FileResponse(dashboard_path)
 
 @app.post("/initialize")
 async def initialize_system(request: InitializeRequest):
@@ -557,7 +566,7 @@ async def startup_event():
     logger.info("  Continuous Solar + Battery Optimization API")
     logger.info("  Version 2.1.0 - Simplified Structure")
     logger.info("="*70)
-    logger.info("✓ Fixed battery: 100kWh, 25kW, 20-90% SOC")
+    logger.info("✓ Fixed battery: 12kWh, 3kW, 20-90% SOC")
     logger.info("✓ Fixed tariff: Peak/Day/Off-peak")
     logger.info("✓ Single CSV: data/historical_solar_data.csv")
     logger.info("="*70)

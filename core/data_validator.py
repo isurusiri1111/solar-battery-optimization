@@ -67,7 +67,7 @@ class DataValidator:
                 print(f"  - {issue}")
             print()
         
-        print("✓ Battery: FIXED (100kWh, 25kW, 20-90%)")
+        print("✓ Battery: FIXED (12kWh, 3kW, 20-90%)")
         print("✓ Tariff: FIXED (Peak/Day/Off-peak)\n")
         
         print("="*70)

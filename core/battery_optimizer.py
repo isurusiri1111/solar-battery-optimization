@@ -15,12 +15,12 @@ class BatteryOptimizer:
     def __init__(self):
         # ✅ FIXED BATTERY PARAMETERS
         self.battery_params = {
-            "E_capacity": 100.0,
-            "SOC_min": 20.0,
-            "SOC_max": 90.0,
-            "SOC_initial": 50.0,
-            "P_charge_max": 25.0,
-            "P_discharge_max": 25.0,
+            "E_capacity": 12.0,      # kWh
+            "SOC_min": 20.0,         # %
+            "SOC_max": 90.0,         # %
+            "SOC_initial": 50.0,     # %
+            "P_charge_max": 3.0,     # kW
+            "P_discharge_max": 3.0,  # kW
             "eta_charge": 0.95,
             "eta_discharge": 0.95,
         }
