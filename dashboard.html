@@ -1245,19 +1245,23 @@
                 const exportRevenue = item.P_export * item.tariff_export;
                 
                 // Categorize import by time period (with tolerance for floating point)
-                if (Math.abs(item.tariff_import - 21) < 0.1) {
+                // Off-peak: Rs.13/kWh, Day: Rs.25/kWh, Peak: Rs.54/kWh
+                if (Math.abs(item.tariff_import - 13) < 0.1) {
                     importOffpeak += importCost;
-                } else if (Math.abs(item.tariff_import - 35) < 0.1) {
+                } else if (Math.abs(item.tariff_import - 25) < 0.1) {
                     importDay += importCost;
-                } else if (Math.abs(item.tariff_import - 67) < 0.1) {
+                } else if (Math.abs(item.tariff_import - 54) < 0.1) {
                     importPeak += importCost;
                 }
                 
                 // Categorize export by tariff (with tolerance for floating point)
-                if (Math.abs(item.tariff_export - 19.61) < 0.1) {
+                // Solar: Rs.19.61/kWh (or 25), Peak: Rs.45.80/kWh
+                if (Math.abs(item.tariff_export - 25) < 0.1) {
                     exportSolar += exportRevenue;
                 } else if (Math.abs(item.tariff_export - 45.80) < 0.1) {
                     exportPeak += exportRevenue;
+                } else if (Math.abs(item.tariff_export - 13) < 0.1) {
+                    exportSolar += exportRevenue;
                 }
             });
             
