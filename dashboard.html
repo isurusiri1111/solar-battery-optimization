@@ -491,6 +491,9 @@
                         <div class="metric-card">
                             <div class="metric-label">Total Cost</div>
                             <div class="metric-value">Rs.<span id="opt-cost">0</span></div>
+                            <div style="font-size: 0.8em; opacity: 0.9; margin-top: 5px;">
+                                <span id="cost-interpretation"></span>
+                            </div>
                         </div>
                         <div class="metric-card" style="background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);">
                             <div class="metric-label">Grid Import</div>
@@ -499,6 +502,29 @@
                         <div class="metric-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
                             <div class="metric-label">Grid Export</div>
                             <div class="metric-value"><span id="opt-export">0</span> kWh</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cost Breakdown Section -->
+                    <div class="alert alert-info" style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 15px;">💰 Cost Breakdown (24 Hours)</h4>
+                        <div class="grid-2">
+                            <div>
+                                <h5>Grid Import Costs:</h5>
+                                <p>🌙 Off-Peak (22:30-05:30): Rs.<span id="import-offpeak">0</span></p>
+                                <p>☀️ Day (05:30-18:30): Rs.<span id="import-day">0</span></p>
+                                <p>⚡ Peak (18:30-22:30): Rs.<span id="import-peak">0</span></p>
+                                <p><strong>Total Import Cost: Rs.<span id="total-import-cost">0</span></strong></p>
+                            </div>
+                            <div>
+                                <h5>Grid Export Revenue:</h5>
+                                <p>☀️ Solar Only: Rs.<span id="export-solar">0</span></p>
+                                <p>🔋 Peak Export (18:30-22:30): Rs.<span id="export-peak">0</span></p>
+                                <p><strong>Total Export Revenue: Rs.<span id="total-export-revenue">0</span></strong></p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(255,255,255,0.3);">
+                            <h4>Net Result: <span id="net-result-text" style="font-size: 1.3em;"></span></h4>
                         </div>
                     </div>
                     
@@ -1126,6 +1152,69 @@
             document.getElementById('opt-cost').textContent = results.total_cost.toFixed(2);
             document.getElementById('opt-import').textContent = results.total_import_kWh.toFixed(2);
             document.getElementById('opt-export').textContent = results.total_export_kWh.toFixed(2);
+            
+            // Cost interpretation
+            const costInterpretation = document.getElementById('cost-interpretation');
+            if (results.total_cost < 0) {
+                costInterpretation.innerHTML = '✅ PROFIT! You are making money';
+                costInterpretation.style.color = '#27ae60';
+            } else if (results.total_cost > 0) {
+                costInterpretation.innerHTML = '💰 Net cost for 24 hours';
+                costInterpretation.style.color = '#e74c3c';
+            } else {
+                costInterpretation.innerHTML = '⚖️ Break-even (no profit/loss)';
+                costInterpretation.style.color = '#f39c12';
+            }
+            
+            // Calculate cost breakdown
+            let importOffpeak = 0, importDay = 0, importPeak = 0;
+            let exportSolar = 0, exportPeak = 0;
+            
+            results.schedule.forEach(item => {
+                const importCost = item.P_import * item.tariff_import;
+                const exportRevenue = item.P_export * item.tariff_export;
+                
+                // Categorize import by time period
+                if (item.tariff_import === 21) {
+                    importOffpeak += importCost;
+                } else if (item.tariff_import === 35) {
+                    importDay += importCost;
+                } else if (item.tariff_import === 67) {
+                    importPeak += importCost;
+                }
+                
+                // Categorize export by tariff
+                if (item.tariff_export === 19.61) {
+                    exportSolar += exportRevenue;
+                } else if (item.tariff_export === 45.80) {
+                    exportPeak += exportRevenue;
+                }
+            });
+            
+            const totalImportCost = importOffpeak + importDay + importPeak;
+            const totalExportRevenue = exportSolar + exportPeak;
+            
+            document.getElementById('import-offpeak').textContent = importOffpeak.toFixed(2);
+            document.getElementById('import-day').textContent = importDay.toFixed(2);
+            document.getElementById('import-peak').textContent = importPeak.toFixed(2);
+            document.getElementById('total-import-cost').textContent = totalImportCost.toFixed(2);
+            
+            document.getElementById('export-solar').textContent = exportSolar.toFixed(2);
+            document.getElementById('export-peak').textContent = exportPeak.toFixed(2);
+            document.getElementById('total-export-revenue').textContent = totalExportRevenue.toFixed(2);
+            
+            const netResult = totalImportCost - totalExportRevenue;
+            const netResultText = document.getElementById('net-result-text');
+            if (netResult < 0) {
+                netResultText.innerHTML = `💰 Rs.${Math.abs(netResult).toFixed(2)} PROFIT`;
+                netResultText.style.color = '#27ae60';
+            } else if (netResult > 0) {
+                netResultText.innerHTML = `💸 Rs.${netResult.toFixed(2)} COST`;
+                netResultText.style.color = '#e74c3c';
+            } else {
+                netResultText.innerHTML = `⚖️ Rs.0.00 Break-even`;
+                netResultText.style.color = '#f39c12';
+            }
             
             const labels = results.schedule.map((_, i) => `H${i}`);
             
