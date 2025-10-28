@@ -507,24 +507,74 @@
                     
                     <!-- Cost Breakdown Section -->
                     <div class="alert alert-info" style="margin-top: 20px;">
-                        <h4 style="margin-bottom: 15px;">💰 Cost Breakdown (24 Hours)</h4>
+                        <h4 style="margin-bottom: 15px;">Cost Breakdown (24 Hours)</h4>
                         <div class="grid-2">
                             <div>
                                 <h5>Grid Import Costs:</h5>
-                                <p>🌙 Off-Peak (22:30-05:30): Rs.<span id="import-offpeak">0</span></p>
-                                <p>☀️ Day (05:30-18:30): Rs.<span id="import-day">0</span></p>
-                                <p>⚡ Peak (18:30-22:30): Rs.<span id="import-peak">0</span></p>
+                                <p>Off-Peak (22:30-05:30): Rs.<span id="import-offpeak">0</span></p>
+                                <p>Day (05:30-18:30): Rs.<span id="import-day">0</span></p>
+                                <p>Peak (18:30-22:30): Rs.<span id="import-peak">0</span></p>
                                 <p><strong>Total Import Cost: Rs.<span id="total-import-cost">0</span></strong></p>
                             </div>
                             <div>
                                 <h5>Grid Export Revenue:</h5>
-                                <p>☀️ Solar Only: Rs.<span id="export-solar">0</span></p>
-                                <p>🔋 Peak Export (18:30-22:30): Rs.<span id="export-peak">0</span></p>
+                                <p>Solar Only: Rs.<span id="export-solar">0</span></p>
+                                <p>Peak Export (18:30-22:30): Rs.<span id="export-peak">0</span></p>
                                 <p><strong>Total Export Revenue: Rs.<span id="total-export-revenue">0</span></strong></p>
                             </div>
                         </div>
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(255,255,255,0.3);">
                             <h4>Net Result: <span id="net-result-text" style="font-size: 1.3em;"></span></h4>
+                        </div>
+                    </div>
+                    
+                    <!-- Scenario Comparison Section -->
+                    <div class="alert alert-info" style="margin-top: 30px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+                        <h3 style="margin-bottom: 20px;">Scenario Comparison (24 Hours)</h3>
+                        
+                        <table style="width: 100%; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                            <thead>
+                                <tr style="background: rgba(0,0,0,0.3);">
+                                    <th style="padding: 12px; text-align: left;">Scenario</th>
+                                    <th style="padding: 12px; text-align: right;">Grid Import</th>
+                                    <th style="padding: 12px; text-align: right;">Grid Export</th>
+                                    <th style="padding: 12px; text-align: right;">Total Cost</th>
+                                    <th style="padding: 12px; text-align: right;">Savings vs S2</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <td style="padding: 12px;"><strong>Scenario 2: Solar Only (No Battery)</strong></td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s2-import">-</span> kWh</td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s2-export">-</span> kWh</td>
+                                    <td style="padding: 12px; text-align: right;">Rs.<span id="s2-cost">-</span></td>
+                                    <td style="padding: 12px; text-align: right;">-</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <td style="padding: 12px;"><strong>Scenario 3: Solar + Battery (No EMS)</strong></td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s3-import">-</span> kWh</td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s3-export">-</span> kWh</td>
+                                    <td style="padding: 12px; text-align: right;">Rs.<span id="s3-cost">-</span></td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s3-savings">-</span></td>
+                                </tr>
+                                <tr style="background: rgba(46, 204, 113, 0.2); font-weight: bold;">
+                                    <td style="padding: 12px;"><strong>Scenario 4: Solar + Battery + AI EMS (Current)</strong></td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s4-import">-</span> kWh</td>
+                                    <td style="padding: 12px; text-align: right;"><span id="s4-export">-</span> kWh</td>
+                                    <td style="padding: 12px; text-align: right;">Rs.<span id="s4-cost">-</span></td>
+                                    <td style="padding: 12px; text-align: right; color: #2ecc71;"><span id="s4-savings">-</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <h4>Key Benefits of AI-Based EMS:</h4>
+                            <ul style="margin-top: 10px; line-height: 1.8;">
+                                <li>Strategic battery charging during off-peak hours (Rs. 21/kWh)</li>
+                                <li>Peak export optimization (Rs. 45.80/kWh vs Rs. 19.61/kWh)</li>
+                                <li>Predictive solar forecasting using CNN-LSTM model</li>
+                                <li>Dynamic load balancing and grid arbitrage</li>
+                            </ul>
                         </div>
                     </div>
                     
@@ -1156,13 +1206,13 @@
             // Cost interpretation
             const costInterpretation = document.getElementById('cost-interpretation');
             if (results.total_cost < 0) {
-                costInterpretation.innerHTML = '✅ PROFIT! You are making money';
+                costInterpretation.innerHTML = 'PROFIT - You are making money';
                 costInterpretation.style.color = '#27ae60';
             } else if (results.total_cost > 0) {
-                costInterpretation.innerHTML = '💰 Net cost for 24 hours';
+                costInterpretation.innerHTML = 'Net cost for 24 hours';
                 costInterpretation.style.color = '#e74c3c';
             } else {
-                costInterpretation.innerHTML = '⚖️ Break-even (no profit/loss)';
+                costInterpretation.innerHTML = 'Break-even (no profit/loss)';
                 costInterpretation.style.color = '#f39c12';
             }
             
@@ -1206,15 +1256,18 @@
             const netResult = totalImportCost - totalExportRevenue;
             const netResultText = document.getElementById('net-result-text');
             if (netResult < 0) {
-                netResultText.innerHTML = `💰 Rs.${Math.abs(netResult).toFixed(2)} PROFIT`;
+                netResultText.innerHTML = `Rs.${Math.abs(netResult).toFixed(2)} PROFIT`;
                 netResultText.style.color = '#27ae60';
             } else if (netResult > 0) {
-                netResultText.innerHTML = `💸 Rs.${netResult.toFixed(2)} COST`;
+                netResultText.innerHTML = `Rs.${netResult.toFixed(2)} COST`;
                 netResultText.style.color = '#e74c3c';
             } else {
-                netResultText.innerHTML = `⚖️ Rs.0.00 Break-even`;
+                netResultText.innerHTML = `Rs.0.00 Break-even`;
                 netResultText.style.color = '#f39c12';
             }
+            
+            // Calculate scenario comparisons
+            calculateScenarioComparison(results);
             
             const labels = results.schedule.map((_, i) => `H${i}`);
             
@@ -1295,6 +1348,122 @@
                 showAlert('auto-opt-status', `Error: ${error.message}`, 'warning');
                 document.getElementById('auto-opt-enabled').checked = !enabled;
             }
+        }
+        
+        // Calculate scenario comparison
+        function calculateScenarioComparison(s4Results) {
+            // Tariff rates
+            const tariffs = {
+                import: { offpeak: 21, day: 35, peak: 67 },
+                export: { solar: 19.61, peak: 45.80 }
+            };
+            
+            // Helper function to get tariff based on hour
+            function getImportTariff(hour) {
+                if (hour >= 22.5 || hour < 5.5) return tariffs.import.offpeak;  // 22:30-05:30
+                if (hour >= 18.5) return tariffs.import.peak;  // 18:30-22:30
+                return tariffs.import.day;  // 05:30-18:30
+            }
+            
+            function getExportTariff(hour, hasBattery) {
+                if (hasBattery && hour >= 18.5 && hour < 22.5) return tariffs.export.peak;
+                return tariffs.export.solar;
+            }
+            
+            // Extract solar and load data from S4 results
+            const solarData = s4Results.schedule.map(s => s.solar_kW);
+            const loadData = s4Results.schedule.map(s => s.load_kW);
+            
+            // SCENARIO 2: Solar Only (No Battery, No EMS)
+            let s2Import = 0, s2Export = 0, s2Cost = 0;
+            
+            for (let h = 0; h < 24; h++) {
+                const solar = solarData[h];
+                const load = loadData[h];
+                const netPower = solar - load;
+                
+                if (netPower < 0) {
+                    // Need to import
+                    const importKWh = Math.abs(netPower);
+                    s2Import += importKWh;
+                    s2Cost += importKWh * getImportTariff(h);
+                } else {
+                    // Can export
+                    const exportKWh = netPower;
+                    s2Export += exportKWh;
+                    s2Cost -= exportKWh * getExportTariff(h, false);
+                }
+            }
+            
+            // SCENARIO 3: Solar + Battery (No EMS - Simple charging)
+            // Simple strategy: Charge battery from solar when available, discharge at night
+            let s3Import = 0, s3Export = 0, s3Cost = 0;
+            let batterySOC = 50; // Start at 50%
+            const batteryCapacity = 100; // kWh
+            const maxCharge = 25; // kW
+            const maxDischarge = 25; // kW
+            const minSOC = 20;
+            const maxSOC = 90;
+            
+            for (let h = 0; h < 24; h++) {
+                const solar = solarData[h];
+                const load = loadData[h];
+                let netPower = solar - load;
+                
+                // Simple battery logic: charge during day, discharge at night
+                if (h >= 6 && h < 18 && solar > 0) {
+                    // Daytime: try to charge battery with excess solar
+                    if (netPower > 0 && batterySOC < maxSOC) {
+                        const chargeAmount = Math.min(netPower, maxCharge, (maxSOC - batterySOC));
+                        batterySOC += chargeAmount;
+                        netPower -= chargeAmount;
+                    }
+                } else {
+                    // Night: discharge battery if needed
+                    if (netPower < 0 && batterySOC > minSOC) {
+                        const dischargeAmount = Math.min(Math.abs(netPower), maxDischarge, (batterySOC - minSOC));
+                        batterySOC -= dischargeAmount;
+                        netPower += dischargeAmount;
+                    }
+                }
+                
+                // Handle remaining import/export
+                if (netPower < 0) {
+                    const importKWh = Math.abs(netPower);
+                    s3Import += importKWh;
+                    s3Cost += importKWh * getImportTariff(h);
+                } else if (netPower > 0) {
+                    const exportKWh = netPower;
+                    s3Export += exportKWh;
+                    s3Cost -= exportKWh * getExportTariff(h, false); // No peak export benefit
+                }
+            }
+            
+            // SCENARIO 4: Current AI-based EMS (from optimization results)
+            const s4Import = s4Results.total_import_kWh;
+            const s4Export = s4Results.total_export_kWh;
+            const s4Cost = s4Results.total_cost;
+            
+            // Update display
+            document.getElementById('s2-import').textContent = s2Import.toFixed(2);
+            document.getElementById('s2-export').textContent = s2Export.toFixed(2);
+            document.getElementById('s2-cost').textContent = s2Cost.toFixed(2);
+            
+            document.getElementById('s3-import').textContent = s3Import.toFixed(2);
+            document.getElementById('s3-export').textContent = s3Export.toFixed(2);
+            document.getElementById('s3-cost').textContent = s3Cost.toFixed(2);
+            
+            const s3Savings = s2Cost - s3Cost;
+            document.getElementById('s3-savings').textContent = 
+                (s3Savings >= 0 ? '+' : '') + s3Savings.toFixed(2);
+            
+            document.getElementById('s4-import').textContent = s4Import.toFixed(2);
+            document.getElementById('s4-export').textContent = s4Export.toFixed(2);
+            document.getElementById('s4-cost').textContent = s4Cost.toFixed(2);
+            
+            const s4Savings = s2Cost - s4Cost;
+            document.getElementById('s4-savings').textContent = 
+                (s4Savings >= 0 ? '+' : '') + s4Savings.toFixed(2);
         }
         
         // Refresh system statistics
