@@ -374,6 +374,53 @@
         
         <!-- Real-time Updates Tab -->
         <div id="realtime-tab" class="tab-content">
+            <!-- ESP32 Live Monitor Card -->
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h2 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">🔴 ESP32 Live Solar Monitor</h2>
+                
+                <div class="grid-3" style="margin-bottom: 20px;">
+                    <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 10px;">Current Power</div>
+                        <div id="live-power" style="font-size: 3em; font-weight: bold;">---</div>
+                        <div style="font-size: 0.8em; opacity: 0.8;">Watts</div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 10px;">Last Update</div>
+                        <div id="live-timestamp" style="font-size: 1.2em; font-weight: bold;">---</div>
+                        <div id="live-age" style="font-size: 0.8em; opacity: 0.8;">Waiting...</div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 10px;">ESP32 Status</div>
+                        <div id="esp32-status" style="font-size: 1.5em; font-weight: bold;">●</div>
+                        <div id="esp32-status-text" style="font-size: 0.9em; opacity: 0.9;">Connecting...</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>Today's Energy:</strong> <span id="today-energy">0.00</span> kWh
+                        </div>
+                        <div>
+                            <strong>Peak Power Today:</strong> <span id="peak-power">0</span> W
+                        </div>
+                        <div>
+                            <strong>Bridge Status:</strong> <span id="bridge-status">Checking...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; text-align: center;">
+                    <button onclick="toggleLiveMonitoring()" id="live-monitor-toggle" 
+                            style="padding: 10px 30px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 6px; font-size: 1em; cursor: pointer; font-weight: 600;">
+                        ▶ Start Live Monitoring
+                    </button>
+                    <span style="margin-left: 15px; font-size: 0.9em; opacity: 0.8;">Auto-updates every 10 seconds</span>
+                </div>
+            </div>
+            
             <div class="card">
                 <h2>Real-time Sliding Window Updates</h2>
                 
@@ -909,6 +956,147 @@
                 showAlert('solar-status', `Error: ${error.message}`, 'warning');
             }
         }
+        
+        // ==================== ESP32 LIVE MONITORING ====================
+        let liveMonitoringInterval = null;
+        let isLiveMonitoring = false;
+        let todayEnergyTotal = 0;
+        let peakPowerToday = 0;
+        let lastUpdateTime = null;
+        
+        // Toggle live monitoring on/off
+        function toggleLiveMonitoring() {
+            if (isLiveMonitoring) {
+                stopLiveMonitoring();
+            } else {
+                startLiveMonitoring();
+            }
+        }
+        
+        // Start live monitoring
+        function startLiveMonitoring() {
+            isLiveMonitoring = true;
+            document.getElementById('live-monitor-toggle').innerHTML = '⏸ Stop Live Monitoring';
+            document.getElementById('live-monitor-toggle').style.background = 'rgba(255,100,100,0.3)';
+            
+            // Fetch immediately
+            fetchLivePower();
+            
+            // Then fetch every 10 seconds
+            liveMonitoringInterval = setInterval(fetchLivePower, 10000);
+            
+            console.log('ESP32 live monitoring started');
+        }
+        
+        // Stop live monitoring
+        function stopLiveMonitoring() {
+            isLiveMonitoring = false;
+            document.getElementById('live-monitor-toggle').innerHTML = '▶ Start Live Monitoring';
+            document.getElementById('live-monitor-toggle').style.background = 'rgba(255,255,255,0.2)';
+            
+            if (liveMonitoringInterval) {
+                clearInterval(liveMonitoringInterval);
+                liveMonitoringInterval = null;
+            }
+            
+            console.log('ESP32 live monitoring stopped');
+        }
+        
+        // Fetch live power data from Railway
+        async function fetchLivePower() {
+            try {
+                const response = await fetch(`${API_URL}/status`);
+                const data = await response.json();
+                
+                // Update connection status
+                document.getElementById('bridge-status').innerHTML = '<span style="color: #4CAF50;">● Connected</span>';
+                document.getElementById('esp32-status').textContent = '●';
+                document.getElementById('esp32-status').style.color = '#4CAF50';
+                
+                // Check if we have measurement data
+                if (data.last_measurement_time) {
+                    lastUpdateTime = new Date(data.last_measurement_time);
+                    
+                    // Get the latest power reading from window
+                    const windowResponse = await fetch(`${API_URL}/window/current`);
+                    const windowData = await windowResponse.json();
+                    
+                    if (windowData.data && windowData.data.length > 0) {
+                        const latestMeasurement = windowData.data[windowData.data.length - 1];
+                        const currentPower = latestMeasurement['Power(W)'];
+                        
+                        // Update live power display
+                        document.getElementById('live-power').textContent = currentPower.toFixed(0);
+                        document.getElementById('live-power').style.color = currentPower > 0 ? '#FFD700' : '#FFFFFF';
+                        
+                        // Update timestamp
+                        const timestamp = new Date(latestMeasurement.datetime);
+                        document.getElementById('live-timestamp').textContent = timestamp.toLocaleTimeString();
+                        
+                        // Calculate age of data
+                        const ageSeconds = Math.floor((new Date() - timestamp) / 1000);
+                        let ageText = '';
+                        let statusColor = '#4CAF50'; // Green
+                        let statusText = 'ONLINE';
+                        
+                        if (ageSeconds < 60) {
+                            ageText = `${ageSeconds} seconds ago`;
+                        } else if (ageSeconds < 300) { // Less than 5 minutes
+                            ageText = `${Math.floor(ageSeconds / 60)} minutes ago`;
+                            statusColor = '#FFA500'; // Orange
+                            statusText = 'DELAYED';
+                        } else {
+                            ageText = `${Math.floor(ageSeconds / 60)} minutes ago`;
+                            statusColor = '#FF5252'; // Red
+                            statusText = 'OFFLINE';
+                        }
+                        
+                        document.getElementById('live-age').textContent = ageText;
+                        document.getElementById('esp32-status').style.color = statusColor;
+                        document.getElementById('esp32-status-text').textContent = statusText;
+                        
+                        // Update peak power
+                        if (currentPower > peakPowerToday) {
+                            peakPowerToday = currentPower;
+                            document.getElementById('peak-power').textContent = peakPowerToday.toFixed(0);
+                        }
+                        
+                        // Calculate today's energy (rough estimate from window data)
+                        const today = new Date().toDateString();
+                        const todayData = windowData.data.filter(d => 
+                            new Date(d.datetime).toDateString() === today
+                        );
+                        
+                        if (todayData.length > 0) {
+                            // Average power × hours = energy
+                            const avgPower = todayData.reduce((sum, d) => sum + d['Power(W)'], 0) / todayData.length;
+                            todayEnergyTotal = (avgPower * todayData.length) / 1000; // Convert to kWh
+                            document.getElementById('today-energy').textContent = todayEnergyTotal.toFixed(2);
+                        }
+                    } else {
+                        // No data in window yet
+                        document.getElementById('esp32-status-text').textContent = 'WAITING FOR DATA';
+                        document.getElementById('live-age').textContent = 'Waiting for ESP32...';
+                    }
+                } else {
+                    // No measurements received yet
+                    document.getElementById('esp32-status').style.color = '#FFA500';
+                    document.getElementById('esp32-status-text').textContent = 'NO DATA';
+                    document.getElementById('live-age').textContent = 'No measurements yet';
+                }
+                
+            } catch (error) {
+                console.error('Failed to fetch live power:', error);
+                
+                // Update status to show error
+                document.getElementById('bridge-status').innerHTML = '<span style="color: #FF5252;">● Disconnected</span>';
+                document.getElementById('esp32-status').style.color = '#FF5252';
+                document.getElementById('esp32-status-text').textContent = 'ERROR';
+                document.getElementById('live-age').textContent = 'Connection failed';
+            }
+        }
+        
+        // ==================== END ESP32 LIVE MONITORING ====================
         
         // Refresh status
         async function refreshStatus() {
